@@ -1,0 +1,7 @@
+ÒÀÀµbaseÏîÄ¿
+cloneµØÖ·:https://github.com/xiaojinzi123/xiaojinzi-openSource-base.git
+ä¯ÀÀÆ÷ÍøÖ·:https://github.com/xiaojinzi123/xiaojinzi-openSource-base
+
+ÒÀÀµdbOrmÏîÄ¿
+cloneµØÖ·:https://github.com/xiaojinzi123/xiaojinzi-openSource-dbOrm.git
+ä¯ÀÀÆ÷ÍøÖ·:https://github.com/xiaojinzi123/xiaojinzi-openSource-dbOrm
