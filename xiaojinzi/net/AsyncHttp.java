@@ -66,6 +66,26 @@ public class AsyncHttp<Parameter> implements Runnable {
     private static JsonCacheDao cacheDao;
 
     /**
+     * 最大的线程数量
+     */
+    private int maxThreadNumber = 5;
+
+    /**
+     * 当前的线程个数
+     */
+    private int currentThreadNumber = 0;
+
+    public AsyncHttp() {
+    }
+
+    /**
+     * @param maxThreadNumber 线程最大的数量
+     */
+    public AsyncHttp(int maxThreadNumber) {
+        this.maxThreadNumber = maxThreadNumber;
+    }
+
+    /**
      * 设置缓存的拦截器
      */
     public static void initCacheJson(Context context) {
@@ -164,6 +184,11 @@ public class AsyncHttp<Parameter> implements Runnable {
     private Handler h = new Handler() {
         public void handleMessage(android.os.Message msg) {
 
+            //一个线程消亡
+            currentThreadNumber--;
+
+            startThread();
+
             // 取出一个结果
             ResultInfo<Parameter> resultInfo = resultInfos.remove(0);
 
@@ -235,6 +260,7 @@ public class AsyncHttp<Parameter> implements Runnable {
                     resultInfo.dataHandler.error(e);
                 }
             }
+
 
         }
 
@@ -323,7 +349,7 @@ public class AsyncHttp<Parameter> implements Runnable {
         // 添加一个网络任务到集合中
         netTasks.add(new NetTask<Parameter>(spec, responseDataStyle, dataHandler, pd, isUseJsonCache));
 
-        new Thread(this).start();
+        startThread();
 
     }
 
@@ -411,8 +437,18 @@ public class AsyncHttp<Parameter> implements Runnable {
         netTasks.add(
                 new NetTask<Parameter>(spec, responseDataStyle, parameterDataHandler, pd, isUseJsonCache, parameters));
 
-        new Thread(this).start();
+        startThread();
 
+    }
+
+    /**
+     * 开启线程
+     */
+    private void startThread() {
+        if (currentThreadNumber < maxThreadNumber && netTasks.size() > 0) { //如果线程还没有满,那就开启
+            currentThreadNumber++;
+            new Thread(this).start();
+        }
     }
 
     /**
@@ -587,7 +623,7 @@ public class AsyncHttp<Parameter> implements Runnable {
 
     /**
      * 数据处理的接口
-     * <p>
+     * <p/>
      * Be replaced by BaseDataHandler ,see {@link BaseDataHandler}
      *
      * @author xiaojinzi
@@ -614,6 +650,10 @@ public class AsyncHttp<Parameter> implements Runnable {
 
     @Override
     public void run() {
+
+        if (netTasks.size() == 0) {
+            return;
+        }
 
         // 拿到一个任务
         NetTask<Parameter> netTask = netTasks.remove(0);
@@ -669,7 +709,7 @@ public class AsyncHttp<Parameter> implements Runnable {
                 File f = new File(netTask.url.substring(LOCALFILEURLPREFIX.length()));
                 if (f.isFile()) {
                     is = new FileInputStream(f);
-                }else{
+                } else {
                     // 获取一个网络请求返回的输入流
                     is = Http.getInputStream(netTask.url);
                 }
