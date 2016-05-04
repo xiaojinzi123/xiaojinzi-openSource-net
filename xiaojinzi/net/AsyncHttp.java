@@ -6,6 +6,7 @@ import android.content.Context;
 import android.os.Handler;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Vector;
@@ -47,7 +48,12 @@ public class AsyncHttp<Parameter> implements Runnable {
     /**
      * 默认使用的编码方式
      */
-    public static String CHARENCODING = "UTF-8";
+    public static final String CHARENCODING = "UTF-8";
+
+    /**
+     * 本地文件的前缀标识
+     */
+    public static final String LOCALFILEURLPREFIX = "file:";
 
     /**
      * 网络请求的过滤器
@@ -581,7 +587,7 @@ public class AsyncHttp<Parameter> implements Runnable {
 
     /**
      * 数据处理的接口
-     * <p/>
+     * <p>
      * Be replaced by BaseDataHandler ,see {@link BaseDataHandler}
      *
      * @author xiaojinzi
@@ -640,7 +646,6 @@ public class AsyncHttp<Parameter> implements Runnable {
             info.responseDataStyle = netTask.responseDataStyle;
             info.netTaskResponseDataStyle = netTask.responseDataStyle;
 
-//            if (netTask.isUseJsonCache) { // 判断这个请求是否使用缓存
             // 网络任务开始请求的时候的拦截
             for (int i = 0; i < netFilters.size(); i++) {
                 NetFilter filter = netFilters.get(i);
@@ -656,14 +661,22 @@ public class AsyncHttp<Parameter> implements Runnable {
                     return;
                 }
             }
-//            } else {
-//                if (isLog) {
-//                    L.s(TAG, "请求 '" + netTask.url + "' 不使用用缓存");
-//                }
-//            }
 
-            // 获取一个网络请求返回的输入流
-            InputStream is = Http.getInputStream(netTask.url);
+            InputStream is;
+
+            //如果是一个本地的文件
+            if (netTask.url.startsWith(LOCALFILEURLPREFIX)) {
+                File f = new File(netTask.url.substring(LOCALFILEURLPREFIX.length()));
+                if (f.isFile()) {
+                    is = new FileInputStream(f);
+                }else{
+                    // 获取一个网络请求返回的输入流
+                    is = Http.getInputStream(netTask.url);
+                }
+            } else {
+                // 获取一个网络请求返回的输入流
+                is = Http.getInputStream(netTask.url);
+            }
 
             if (netTask.pd != null) {
                 netTask.pd.setMax(Http.getContentLength(Thread.currentThread().getId()));
