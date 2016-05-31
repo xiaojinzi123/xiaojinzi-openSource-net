@@ -3,7 +3,7 @@ package xiaojinzi.net.adapter;
 import java.io.File;
 import java.io.InputStream;
 
-import xiaojinzi.net.AsyncHttp;
+import xiaojinzi.base.java.net.handler.ResponseHandler;
 
 
 /**
@@ -14,7 +14,7 @@ import xiaojinzi.net.AsyncHttp;
  *
  * @param <Parameter>
  */
-public class ParameterHandlerAdapter<Parameter> implements AsyncHttp.ParameterHandler<Parameter> {
+public class ResponseHandlerAdapter<Parameter> implements ResponseHandler<Parameter> {
 
 	@Override
 	public void handler(String data, Parameter... p) throws Exception {
