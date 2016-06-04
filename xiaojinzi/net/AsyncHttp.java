@@ -16,11 +16,11 @@ import xiaojinzi.base.android.store.FileUtil;
 import xiaojinzi.base.android.thread.ThreadPool;
 import xiaojinzi.base.java.io.InputStreamUtil;
 import xiaojinzi.base.java.net.Http;
-import xiaojinzi.base.java.net.NetTask;
+import xiaojinzi.base.java.net.HttpRequest;
 import xiaojinzi.base.java.net.ResultInfo;
 import xiaojinzi.base.java.net.handler.ResponseHandler;
 import xiaojinzi.net.filter.NetFilter;
-import xiaojinzi.net.filter.PdNetTask;
+import xiaojinzi.net.filter.PdHttpRequest;
 
 
 /**
@@ -63,7 +63,7 @@ public class AsyncHttp implements Runnable {
     /**
      * 执行的任务对象集合
      */
-    private Vector<PdNetTask> netTasks = new Vector<PdNetTask>();
+    private Vector<PdHttpRequest> netTasks = new Vector<PdHttpRequest>();
 
     /**
      * 结果信息对象集合
@@ -76,7 +76,7 @@ public class AsyncHttp implements Runnable {
             // 取出一个结果
             ResultInfo resultInfo = resultInfos.remove(0);
 
-            NetTask netTask = resultInfo.netTask;
+            HttpRequest httpRequest = resultInfo.httpRequest;
 
             for (int i = 0; i < netFilters.size(); i++) {
                 NetFilter filter = netFilters.get(i);
@@ -91,38 +91,38 @@ public class AsyncHttp implements Runnable {
             }
 
             //拿到请求结果的处理器
-            ResponseHandler parameterDataHandler = resultInfo.netTask.getResponseHandler();
+            ResponseHandler parameterDataHandler = resultInfo.httpRequest.getResponseHandler();
 
             if (parameterDataHandler == null && parameterDataHandler == null) {
                 return;
             }
 
             // 拿到返回数据的类型
-            int responseDataStyle = resultInfo.netTask.getResponseDataStyle();
+            int responseDataStyle = resultInfo.httpRequest.getResponseDataStyle();
 
             try { //尝试数据处理
                 if (responseDataStyle == ResponseHandler.INPUTSTREAMDATA) {
                     InputStream is = (InputStream) resultInfo.result;
-                    parameterDataHandler.handler(is, netTask.getParameters());
+                    parameterDataHandler.handler(is, httpRequest.getParameters());
                 } else if (responseDataStyle == ResponseHandler.BYTEARRAYDATA) {
                     byte[] bt = (byte[]) resultInfo.result;
-                    parameterDataHandler.handler(bt, netTask.getParameters());
+                    parameterDataHandler.handler(bt, httpRequest.getParameters());
                 } else if (responseDataStyle == ResponseHandler.STRINGDATA) {
                     String content = (String) resultInfo.result;
-                    parameterDataHandler.handler(content, netTask.getParameters());
+                    parameterDataHandler.handler(content, httpRequest.getParameters());
                 } else if (responseDataStyle == ResponseHandler.FILEDATA) {
                     File f = (File) resultInfo.result;
-                    parameterDataHandler.handler(f, netTask.getParameters());
+                    parameterDataHandler.handler(f, httpRequest.getParameters());
                 } else if (responseDataStyle == ResponseHandler.ERRORDATA) {
                     Exception e = (Exception) resultInfo.result;
-                    parameterDataHandler.error(e, netTask.getParameters());
+                    parameterDataHandler.error(e, httpRequest.getParameters());
                 }
             } catch (Exception e) {
                 if (isLog) {
                     L.s(TAG, "处理数据挂了");
                     e.printStackTrace();
                 }
-                parameterDataHandler.error(e, netTask.getParameters());
+                parameterDataHandler.error(e, httpRequest.getParameters());
             }
 
 
@@ -146,7 +146,7 @@ public class AsyncHttp implements Runnable {
      *
      * @param netTask
      */
-    public void send(PdNetTask netTask) {
+    public void send(PdHttpRequest netTask) {
         netTasks.add(netTask);
         ThreadPool.getInstance().invoke(this);
 //        new Thread(this).start();
@@ -157,7 +157,7 @@ public class AsyncHttp implements Runnable {
     public void run() {
 
         // 拿到一个任务
-        PdNetTask netTask = netTasks.remove(0);
+        PdHttpRequest netTask = netTasks.remove(0);
 
         // 网络任务准备请求的时候的拦截
         for (int i = 0; i < netFilters.size(); i++) {
@@ -176,7 +176,7 @@ public class AsyncHttp implements Runnable {
         ResultInfo info = new ResultInfo();
 
         // 保存请求对象到结果对象中
-        info.netTask = netTask;
+        info.httpRequest = netTask;
 
         try {
             // 网络任务开始请求的时候的拦截
@@ -199,8 +199,8 @@ public class AsyncHttp implements Runnable {
             InputStream is;
 
             //如果是一个本地的文件,也就是路径前面是"file:"打头的
-            if (netTask.getRequesutUrl().startsWith(NetTask.LOCALFILEURLPREFIX)) {
-                File f = new File(netTask.getRequesutUrl().substring(NetTask.LOCALFILEURLPREFIX.length()));
+            if (netTask.getRequesutUrl().startsWith(HttpRequest.LOCALFILEURLPREFIX)) {
+                File f = new File(netTask.getRequesutUrl().substring(HttpRequest.LOCALFILEURLPREFIX.length()));
                 if (f.isFile()) {
                     is = new FileInputStream(f);
                 } else {
@@ -246,7 +246,7 @@ public class AsyncHttp implements Runnable {
         } catch (Exception e) {
             info.result = e;
             // 存储数据的类型
-            info.netTask.setResponseDataStyle(ResponseHandler.ERRORDATA);
+            info.httpRequest.setResponseDataStyle(ResponseHandler.ERRORDATA);
         }
 
         // 添加返回对象
